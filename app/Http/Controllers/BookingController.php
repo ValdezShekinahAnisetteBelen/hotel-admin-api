@@ -92,14 +92,16 @@ class BookingController extends Controller
             'status' => 'required|in:pending,confirmed,completed,cancelled',
         ]);
 
-        $booking = Booking::findOrFail($id);
+        $booking = Booking::findOrFail($id); 
         $booking->update(['status' => $validated['status']]);
 
         return response()->json([
             'message' => 'Booking status updated successfully',
             'booking' => $booking,
         ]);
-    }public function getUserBookings($user_id)
+    }
+    
+    public function getUserBookings($user_id)
     {
         try {
             // Fetch bookings with room info

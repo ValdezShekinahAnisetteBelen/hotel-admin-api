@@ -4,7 +4,22 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ReportController;
 
+Route::get('/rooms/featured', [RoomController::class, 'featured']);
+Route::get('/rooms/discounted', [RoomController::class, 'discounted']);
+Route::apiResource('rooms', RoomController::class);
+
+
+// ✅ Admin profile routes
+Route::get('/admin/profile/{id}', [UserController::class, 'show']);
+
+Route::match(['put', 'post'], '/admin/profile/{id}', [UserController::class, 'update']);
+
+Route::get('/reports', [RoomController::class, 'bookingReports']);
+
+Route::get('/users', [UserController::class, 'index']);
 Route::post('/bookings', [BookingController::class, 'store']);
 
 Route::post('/signup', [AuthController::class, 'signup']);
