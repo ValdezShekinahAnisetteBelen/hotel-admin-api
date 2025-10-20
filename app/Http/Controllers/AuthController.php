@@ -2,35 +2,47 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-        public function signup(Request $request)
+    /**
+     * Handle user signup and send verification email
+     */
+    public function signup(Request $request)
     {
         $request->validate([
-            'name' => 'required|string',
-            'username' => 'required|string|unique:users', // ✅ Added username
-            'email' => 'required|string|email|unique:users',
+            'name' => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:users,username',
+            'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:6',
         ]);
 
         $user = User::create([
             'name' => $request->name,
-            'username' => $request->username, // ✅ Added username
+            'username' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'user', // or 'admin'
+            'role' => 'user',
         ]);
 
-        return response()->json(['user' => $user], 201);
+        // ✅ Fire Registered event to trigger verification email
+        event(new Registered($user));
+
+        return response()->json([
+            'message' => 'Account created successfully. Please check your email to verify your account.',
+            'user' => $user
+        ], 201);
     }
 
-
-    // ✅ Login
+    /**
+     * Handle user login
+     */
     public function login(Request $request)
     {
         $request->validate([
@@ -41,21 +53,32 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
-            return response()->json(['error' => 'Invalid credentials'], 401);
+            throw ValidationException::withMessages([
+                'email' => ['Invalid credentials.'],
+            ]);
         }
 
-        // ✅ Make sure User model has HasApiTokens trait!
+        // ✅ Check if user verified email
+        if (!$user->hasVerifiedEmail()) {
+            return response()->json([
+                'error' => 'Please verify your email before logging in.'
+            ], 403);
+        }
+
+        // ✅ Create API token
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'user' => [
-                'id'    => $user->id,
-                'name'  => $user->name,
-                'email' => $user->email,
-                'role'  => $user->role,
-            ],
+            'message' => 'Login successful',
             'token' => $token,
-            'token_type' => 'Bearer'
-        ], 200);
+            'token_type' => 'Bearer',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'username' => $user->username,
+                'role' => $user->role,
+            ],
+        ]);
     }
 }
