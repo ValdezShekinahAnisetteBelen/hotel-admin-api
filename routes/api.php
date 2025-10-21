@@ -11,6 +11,7 @@ use App\Http\Controllers\ReportController;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\URL;
+use App\Http\Controllers\ContactController;
 
 /*
 |--------------------------------------------------------------------------
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\URL;
 |--------------------------------------------------------------------------
 */
 
+Route::post('/contact', [ContactController::class, 'send']);
 
 Route::get('/email/verify/{id}/{hash}', function ($id, $hash, Request $request) {
     // 1️⃣ Find the user by ID
